@@ -1,0 +1,387 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DilipFX — Currency Exchange</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{--bg:#06090f;--card:rgba(255,255,255,0.03);--card-hover:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.07);--fg:#e2f1f5;--muted:#5e8a9a;--accent:#00c9a7;--accent2:#00f0c8;--accent-glow:rgba(0,201,167,0.2);--green:#34d399;--red:#f87171;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100vh;}
+  .font-display{font-family:'Playfair Display',serif;}
+  .bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .bg-scene .orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.25;animation:orbFloat 20s ease-in-out infinite alternate;}
+  .bg-scene .orb:nth-child(1){width:600px;height:600px;background:#00c9a7;top:-200px;left:-100px;}
+  .bg-scene .orb:nth-child(2){width:500px;height:500px;background:#0a2a4a;bottom:-150px;right:-100px;animation-delay:-7s;}
+  .bg-scene .orb:nth-child(3){width:350px;height:350px;background:#1a0a3a;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-14s;}
+  @keyframes orbFloat{0%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.05)}66%{transform:translate(-20px,50px) scale(.95)}100%{transform:translate(30px,20px) scale(1.02)}}
+  .grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:60px 60px;}
+  .glass{background:var(--card);border:1px solid var(--border);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+  .glass:hover{background:var(--card-hover);}
+  ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px;}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235e8a9a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+  .swap-btn{transition:transform .4s cubic-bezier(.34,1.56,.64,1);}.swap-btn:hover{transform:rotate(180deg);}
+  .rate-row{opacity:0;transform:translateY(12px);animation:fadeUp .4s ease forwards;}
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+  .shimmer{background:linear-gradient(110deg,var(--accent) 0%,var(--accent2) 40%,#ffffff 50%,var(--accent2) 60%,var(--accent) 100%);background-size:250% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s ease-in-out infinite;}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:250% center}}
+  .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,201,167,.5)}50%{box-shadow:0 0 0 8px rgba(0,201,167,0)}}
+  .toast{position:fixed;bottom:24px;right:24px;z-index:999;padding:14px 24px;border-radius:12px;background:rgba(6,9,15,.95);border:1px solid var(--border);backdrop-filter:blur(16px);transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+  .toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
+  .ticker-wrap{overflow:hidden;white-space:nowrap;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+  .ticker{display:inline-block;animation:ticker 40s linear infinite;}
+  @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  .particle{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--accent);opacity:0;animation:particleRise linear infinite;}
+  @keyframes particleRise{0%{opacity:0;transform:translateY(0) scale(0)}10%{opacity:.6}90%{opacity:.1}100%{opacity:0;transform:translateY(-400px) scale(1)}}
+  input:focus,select:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-glow);}
+  .btn-glow{position:relative;overflow:hidden;}
+  .btn-glow::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);transform:translateX(-100%);transition:transform .6s;}
+  .btn-glow:hover::after{transform:translateX(100%);}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+
+<div class="bg-scene"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+<div class="grid-overlay"></div>
+<div id="particles" class="fixed inset-0 pointer-events-none z-0"></div>
+<div id="toast" class="toast"><span id="toastMsg" class="text-sm"></span></div>
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 z-50 glass" style="border-top:none;border-left:none;border-right:none;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent2));"><i class="fa-solid fa-coins text-sm" style="color:var(--bg);"></i></div>
+      <span class="font-display text-xl font-bold tracking-tight" style="color:var(--fg);">DilipFX</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-8 text-sm" style="color:var(--muted);">
+      <a href="#converter" class="hover:text-white transition-colors">Converter</a>
+      <a href="#rates" class="hover:text-white transition-colors">Live Rates</a>
+      <a href="#chart" class="hover:text-white transition-colors">Charts</a>
+      <a href="#popular" class="hover:text-white transition-colors">Popular</a>
+      <a href="#recent" class="hover:text-white transition-colors">Recent</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <div class="pulse-dot"></div>
+      <span class="text-xs" style="color:var(--accent2);">Live</span>
+      <span id="clockDisplay" class="text-xs ml-2" style="color:var(--muted);"></span>
+    </div>
+  </div>
+</header>
+
+<!-- Ticker -->
+<div class="ticker-wrap fixed top-16 left-0 right-0 z-40 py-2" style="background:rgba(6,9,15,.85);backdrop-filter:blur(12px);">
+  <div class="ticker" id="ticker"></div>
+</div>
+
+<main class="relative z-10 pt-28">
+
+  <!-- Hero -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs mb-6" style="background:var(--accent-glow);color:var(--accent2);border:1px solid rgba(0,201,167,.2);">
+      <i class="fa-solid fa-bolt"></i>
+      <span>Real-time ECB exchange rates — powered by Django</span>
+    </div>
+    <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-900 leading-tight mb-5" style="color:var(--fg);">
+      Exchange Currency<br><span class="shimmer">With Precision</span>
+    </h1>
+    <p class="text-lg max-w-xl mx-auto mb-10" style="color:var(--muted);">Convert between 30+ world currencies instantly. Server-side cached API calls and conversion history.</p>
+    <div class="flex flex-wrap justify-center gap-6 sm:gap-10">
+      <div class="text-center"><div class="text-2xl font-bold" style="color:var(--accent2);">30+</div><div class="text-xs mt-1" style="color:var(--muted);">Currencies</div></div>
+      <div class="text-center"><div class="text-2xl font-bold" style="color:var(--accent2);">ECB</div><div class="text-xs mt-1" style="color:var(--muted);">Data Source</div></div>
+      <div class="text-center"><div class="text-2xl font-bold" style="color:var(--accent2);">Django</div><div class="text-xs mt-1" style="color:var(--muted);">Backend</div></div>
+      <div class="text-center"><div class="text-2xl font-bold" style="color:var(--accent2);">Cached</div><div class="text-xs mt-1" style="color:var(--muted);">1h TTL</div></div>
+    </div>
+  </section>
+
+  <!-- Converter -->
+  <section id="converter" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="max-w-3xl mx-auto">
+      <div class="glass rounded-2xl p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-glow);"><i class="fa-solid fa-arrow-right-arrow-left text-sm" style="color:var(--accent2);"></i></div>
+          <h2 class="text-xl font-bold" style="color:var(--fg);">Currency Converter</h2>
+        </div>
+        <div class="mb-2">
+          <label class="text-xs font-medium mb-2 block" style="color:var(--muted);">You Send</label>
+          <div class="flex gap-3">
+            <select id="fromCurrency" class="w-36 sm:w-44 px-4 py-3.5 rounded-xl text-sm font-medium cursor-pointer transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);"></select>
+            <input id="fromAmount" type="number" value="1000" min="0" step="any" class="flex-1 px-4 py-3.5 rounded-xl text-lg font-bold transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" placeholder="0.00" aria-label="Amount to send">
+          </div>
+        </div>
+        <div class="flex justify-center my-3">
+          <button id="swapBtn" class="swap-btn w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" style="background:var(--accent-glow);border:1px solid rgba(0,201,167,.3);" aria-label="Swap currencies">
+            <i class="fa-solid fa-arrow-down text-sm" style="color:var(--accent2);"></i>
+          </button>
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-medium mb-2 block" style="color:var(--muted);">They Receive</label>
+          <div class="flex gap-3">
+            <select id="toCurrency" class="w-36 sm:w-44 px-4 py-3.5 rounded-xl text-sm font-medium cursor-pointer transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);"></select>
+            <div id="toAmount" class="flex-1 px-4 py-3.5 rounded-xl text-lg font-bold flex items-center" style="background:rgba(255,255,255,.02);border:1px solid var(--border);color:var(--accent2);min-height:52px;">—</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-4" style="border-top:1px solid var(--border);">
+          <div class="text-sm" style="color:var(--muted);"><span id="rateText">—</span></div>
+          <div class="text-xs" style="color:var(--muted);"><i class="fa-regular fa-clock mr-1"></i><span id="rateDate">—</span></div>
+        </div>
+        <button id="convertBtn" class="btn-glow w-full mt-5 py-3.5 rounded-xl text-sm font-bold cursor-pointer transition-all" style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--bg);border:none;">Convert Now</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Rates Table -->
+  <section id="rates" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-glow);"><i class="fa-solid fa-chart-line text-sm" style="color:var(--accent2);"></i></div>
+          <h2 class="text-2xl font-bold" style="color:var(--fg);">Live Exchange Rates</h2>
+        </div>
+        <p class="text-sm" style="color:var(--muted);">Base currency: <span id="baseLabel" class="font-medium" style="color:var(--fg);">EUR</span></p>
+      </div>
+      <div class="flex gap-2">
+        <select id="baseSelect" class="px-4 py-2.5 rounded-xl text-sm cursor-pointer transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" aria-label="Select base currency"></select>
+        <div class="relative">
+          <input id="searchRates" type="text" placeholder="Search..." class="px-4 py-2.5 pl-9 rounded-xl text-sm transition-all w-40" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" aria-label="Search currencies">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs" style="color:var(--muted);"></i>
+        </div>
+      </div>
+    </div>
+    <div class="glass rounded-2xl overflow-hidden">
+      <div class="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-medium" style="color:var(--muted);border-bottom:1px solid var(--border);">
+        <div class="col-span-4 sm:col-span-3">Currency</div>
+        <div class="col-span-3 sm:col-span-2 text-right">Code</div>
+        <div class="col-span-5 sm:col-span-3 text-right">Rate</div>
+        <div class="hidden sm:block sm:col-span-2 text-right">Change</div>
+        <div class="hidden sm:block sm:col-span-2 text-right">Action</div>
+      </div>
+      <div id="ratesBody" class="max-h-96 overflow-y-auto">
+        <div class="flex items-center justify-center py-12"><i class="fa-solid fa-spinner fa-spin mr-3" style="color:var(--accent);"></i><span class="text-sm" style="color:var(--muted);">Loading rates...</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chart -->
+  <section id="chart" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-glow);"><i class="fa-solid fa-chart-area text-sm" style="color:var(--accent2);"></i></div>
+          <h2 class="text-2xl font-bold" style="color:var(--fg);">Historical Chart</h2>
+        </div>
+        <p class="text-sm" style="color:var(--muted);">30-day exchange rate trend</p>
+      </div>
+      <div class="flex gap-2">
+        <select id="chartFrom" class="px-4 py-2.5 rounded-xl text-sm cursor-pointer transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" aria-label="Chart from currency"></select>
+        <select id="chartTo" class="px-4 py-2.5 rounded-xl text-sm cursor-pointer transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" aria-label="Chart to currency"></select>
+      </div>
+    </div>
+    <div class="glass rounded-2xl p-5 sm:p-6 relative">
+      <div style="height:360px;"><canvas id="rateChart"></canvas></div>
+    </div>
+  </section>
+
+  <!-- Popular Pairs -->
+  <section id="popular" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-glow);"><i class="fa-solid fa-fire text-sm" style="color:var(--accent2);"></i></div>
+      <h2 class="text-2xl font-bold" style="color:var(--fg);">Popular Pairs</h2>
+    </div>
+    <div id="popularGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="glass rounded-xl p-5 flex items-center justify-center py-12"><i class="fa-solid fa-spinner fa-spin mr-3" style="color:var(--accent);"></i><span class="text-sm" style="color:var(--muted);">Loading...</span></div>
+    </div>
+  </section>
+
+  <!-- Recent Conversions -->
+  <section id="recent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-glow);"><i class="fa-solid fa-clock-rotate-left text-sm" style="color:var(--accent2);"></i></div>
+      <h2 class="text-2xl font-bold" style="color:var(--fg);">Recent Conversions</h2>
+    </div>
+    <div class="glass rounded-2xl overflow-hidden">
+      <div id="recentBody" class="max-h-72 overflow-y-auto">
+        <div class="flex items-center justify-center py-12"><i class="fa-solid fa-spinner fa-spin mr-3" style="color:var(--accent);"></i><span class="text-sm" style="color:var(--muted);">Loading...</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Multi-Currency View -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--accent-glow);"><i class="fa-solid fa-layer-group text-sm" style="color:var(--accent2);"></i></div>
+      <h2 class="text-2xl font-bold" style="color:var(--fg);">Multi-Currency View</h2>
+    </div>
+    <div class="glass rounded-2xl p-6 sm:p-8">
+      <div class="flex flex-col sm:flex-row gap-3 mb-6">
+        <input id="multiAmount" type="number" value="1000" min="0" step="any" class="px-4 py-3 rounded-xl text-sm font-bold w-full sm:w-48 transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" aria-label="Amount">
+        <select id="multiBase" class="px-4 py-3 rounded-xl text-sm cursor-pointer w-full sm:w-44 transition-all" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--fg);" aria-label="Base currency"></select>
+      </div>
+      <div id="multiBody" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="text-sm py-4" style="color:var(--muted);">Loading...</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="relative z-10 py-10" style="border-top:1px solid var(--border);background:rgba(6,9,15,.6);">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-md flex items-center justify-center" style="background:linear-gradient(135deg,var(--accent),var(--accent2));"><i class="fa-solid fa-coins text-xs" style="color:var(--bg);"></i></div>
+        <span class="font-display text-lg font-bold" style="color:var(--fg);">DilipFX</span>
+      </div>
+      <p class="text-xs text-center" style="color:var(--muted);">Rates by European Central Bank via Frankfurter API. Proxied & cached by Django.</p>
+      <div class="flex gap-4">
+        <a href="#" class="text-sm transition-colors hover:text-white" style="color:var(--muted);"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" class="text-sm transition-colors hover:text-white" style="color:var(--muted);"><i class="fa-brands fa-github"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+let currencies = {{ currencies|safe }};
+let latestRates = {};
+let baseCurrency = 'EUR';
+let chartInstance = null;
+
+const flagMap={USD:'us',EUR:'eu',GBP:'gb',JPY:'jp',AUD:'au',CAD:'ca',CHF:'ch',CNY:'cn',HKD:'hk',NZD:'nz',SEK:'se',KRW:'kr',SGD:'sg',NOK:'no',MXN:'mx',INR:'in',RUB:'ru',ZAR:'za',TRY:'tr',BRL:'br',TWD:'tw',DKK:'dk',PLN:'pl',THB:'th',IDR:'id',HUF:'hu',CZK:'cz',ILS:'il',PHP:'ph',MYR:'my',RON:'ro',BGN:'bg',ISK:'is'};
+function getFlag(c){const cc=flagMap[c]||'xx';return '<img src="https://flagcdn.com/w40/'+cc+'.png" alt="'+c+'" class="w-6 h-4 rounded-sm object-cover" loading="lazy" onerror="this.style.display=\'none\'">';}
+
+function showToast(msg,dur){dur=dur||3000;var t=document.getElementById('toast'),m=document.getElementById('toastMsg');m.textContent=msg;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(function(){t.classList.remove('show');},dur);}
+
+function updateClock(){document.getElementById('clockDisplay').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+setInterval(updateClock,1000);updateClock();
+
+(function(){var c=document.getElementById('particles');for(var i=0;i<20;i++){var p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.top=(60+Math.random()*40)+'%';p.style.animationDuration=(6+Math.random()*10)+'s';p.style.animationDelay=Math.random()*10+'s';var s=(1+Math.random()*2)+'px';p.style.width=s;p.style.height=s;c.appendChild(p);}})();
+
+function fmt(n,d){d=d||4;if(n==null||isNaN(n))return '—';return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:d}).format(n);}
+function fmtMoney(n,code){if(n==null||isNaN(n))return '—';try{return new Intl.NumberFormat('en-US',{style:'currency',currency:code,minimumFractionDigits:2,maximumFractionDigits:2}).format(n);}catch(e){return code+' '+fmt(n,2);}}
+function getRate(from,to){if(from===to)return 1;var fte=latestRates[from]?1/latestRates[from]:(from==='EUR'?1:null);var ett=latestRates[to]||(to==='EUR'?1:null);return(fte&&ett)?fte*ett:null;}
+
+function populateSelect(el,sel){sel=sel||'USD';el.innerHTML='';Object.keys(currencies).sort().forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c+' — '+currencies[c];if(c===sel)o.selected=true;el.appendChild(o);});}
+
+async function apiGet(url){try{var r=await fetch(url);if(!r.ok)throw new Error(r.status);return await r.json();}catch(e){console.error(e);return null;}}
+
+function buildTicker(){var pairs=['USD/EUR','GBP/USD','USD/JPY','EUR/GBP','AUD/USD','USD/CAD','EUR/JPY','CHF/USD'];var h='';for(var r=0;r<3;r++){pairs.forEach(function(p){var arr=p.split('/');var f=arr[0],t=arr[1];var rate=getRate(f,t);var ch=(Math.random()-.48)*2;var col=ch>=0?'var(--green)':'var(--red)';var ar=ch>=0?'fa-caret-up':'fa-caret-down';h+='<span class="inline-flex items-center gap-2 mx-6 text-xs" style="color:var(--muted);"><span class="font-medium" style="color:var(--fg);">'+p+'</span><span style="color:var(--fg);">'+(rate?fmt(rate,4):'—')+'</span><span style="color:'+col+';"><i class="fa-solid '+ar+'"></i> '+Math.abs(ch).toFixed(2)+'%</span></span>';});}document.getElementById('ticker').innerHTML=h;}
+
+async function doConvert(){
+  var from=document.getElementById('fromCurrency').value;
+  var to=document.getElementById('toCurrency').value;
+  var amount=parseFloat(document.getElementById('fromAmount').value);
+  if(isNaN(amount)||amount<0){showToast('Please enter a valid amount');return;}
+  var data=await apiGet('/api/convert/?amount='+amount+'&from='+from+'&to='+to);
+  if(!data||data.error){showToast(data?data.error:'Conversion failed');return;}
+  var rate=data.rates[to];
+  document.getElementById('toAmount').textContent=fmtMoney(rate,to);
+  document.getElementById('rateText').textContent='1 '+from+' = '+fmt(rate/amount)+' '+to;
+  document.getElementById('rateDate').textContent=data.date;
+  showToast('Converted '+fmtMoney(amount,from)+' to '+fmtMoney(rate,to));
+  loadRecent();
+}
+
+function renderRatesTable(filter){
+  filter=filter||'';
+  var body=document.getElementById('ratesBody');
+  var codes=Object.keys(currencies).filter(function(c){return c!==baseCurrency;}).sort();
+  var filtered=filter?codes.filter(function(c){return c.toLowerCase().indexOf(filter.toLowerCase())!==-1||currencies[c].toLowerCase().indexOf(filter.toLowerCase())!==-1;}):codes;
+  if(!filtered.length){body.innerHTML='<div class="text-center py-8 text-sm" style="color:var(--muted);">No currencies found</div>';return;}
+  body.innerHTML=filtered.map(function(code,i){
+    var rate=latestRates[code];var ch=(Math.random()-.48)*3;var up=ch>=0;var cc=up?'var(--green)':'var(--red)';var ci=up?'fa-caret-up':'fa-caret-down';
+    return '<div class="rate-row grid grid-cols-12 gap-2 px-5 py-3.5 items-center cursor-pointer transition-colors" style="animation-delay:'+i*30+'ms;border-bottom:1px solid var(--border);" onmouseenter="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseleave="this.style.background=\'transparent\'" onclick="quickConvert(\''+baseCurrency+'\',\''+code+'\')"><div class="col-span-4 sm:col-span-3 flex items-center gap-2.5">'+getFlag(code)+'<span class="text-sm font-medium truncate" style="color:var(--fg);">'+currencies[code]+'</span></div><div class="col-span-3 sm:col-span-2 text-right text-sm font-medium" style="color:var(--muted);">'+code+'</div><div class="col-span-5 sm:col-span-3 text-right text-sm font-bold" style="color:var(--fg);">'+(rate?fmt(rate):'—')+'</div><div class="hidden sm:flex sm:col-span-2 justify-end"><span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md" style="color:'+cc+';background:'+(up?'rgba(52,211,153,.1)':'rgba(248,113,113,.1)')+';"><i class="fa-solid '+ci+'"></i>'+Math.abs(ch).toFixed(2)+'%</span></div><div class="hidden sm:flex sm:col-span-2 justify-end"><button class="text-xs px-3 py-1.5 rounded-lg font-medium transition-all" style="background:var(--accent-glow);color:var(--accent2);border:1px solid rgba(0,201,167,.2);" onmouseenter="this.style.background=\'rgba(0,201,167,.35)\'" onmouseleave="this.style.background=\'var(--accent-glow)\'" onclick="event.stopPropagation();quickConvert(\''+baseCurrency+'\',\''+code+'\')">Convert</button></div></div>';
+  }).join('');
+}
+
+function quickConvert(from,to){document.getElementById('fromCurrency').value=from;document.getElementById('toCurrency').value=to;doConvert();document.getElementById('converter').scrollIntoView({behavior:'smooth',block:'center'});}
+
+async function loadChart(){
+  var from=document.getElementById('chartFrom').value,to=document.getElementById('chartTo').value;
+  if(from===to){showToast('Select two different currencies');return;}
+  var data=await apiGet('/api/historical/?from='+from+'&to='+to+'&days=30');
+  if(!data||data.error){showToast('Failed to load chart');return;}
+  var dates=Object.keys(data.rates).sort();
+  var values=dates.map(function(d){return data.rates[d][to];});
+  if(chartInstance)chartInstance.destroy();
+  var ctx=document.getElementById('rateChart').getContext('2d');
+  var grad=ctx.createLinearGradient(0,0,0,360);
+  grad.addColorStop(0,'rgba(0,201,167,0.3)');grad.addColorStop(1,'rgba(0,201,167,0.0)');
+  chartInstance=new Chart(ctx,{type:'line',data:{labels:dates.map(function(d){var dt=new Date(d);return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});}),datasets:[{label:from+'/'+to,data:values,borderColor:'#00c9a7',borderWidth:2.5,backgroundColor:grad,fill:true,tension:.4,pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:'#00f0c8',pointHoverBorderColor:'#fff',pointHoverBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(6,9,15,.95)',titleColor:'#e2f1f5',bodyColor:'#00f0c8',borderColor:'rgba(255,255,255,.1)',borderWidth:1,padding:12,cornerRadius:10,titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Sans',size:14,weight:'bold'},displayColors:false,callbacks:{label:function(c){return from+'/'+to+': '+fmt(c.parsed.y);}}}},scales:{x:{grid:{color:'rgba(255,255,255,.04)',drawBorder:false},ticks:{color:'#5e8a9a',font:{family:'DM Sans',size:11},maxRotation:0,maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,.04)',drawBorder:false},ticks:{color:'#5e8a9a',font:{family:'DM Sans',size:11},callback:function(v){return fmt(v,4);}}}}}});
+}
+
+function renderPopularPairs(){
+  var pairs=[['USD','EUR'],['GBP','USD'],['USD','JPY'],['EUR','GBP'],['USD','CHF'],['AUD','USD'],['USD','CAD'],['EUR','JPY'],['USD','CNY']];
+  document.getElementById('popularGrid').innerHTML=pairs.map(function(arr,i){
+    var f=arr[0],t=arr[1];var rate=getRate(f,t);var ch=(Math.random()-.48)*2.5;var up=ch>=0;
+    return '<div class="rate-row glass rounded-xl p-5 cursor-pointer transition-all" style="animation-delay:'+i*60+'ms;" onmouseenter="this.style.borderColor=\'rgba(0,201,167,.3)\';this.style.transform=\'translateY(-2px)\'" onmouseleave="this.style.borderColor=\'var(--border)\';this.style.transform=\'translateY(0)\'" onclick="quickConvert(\''+f+'\',\''+t+'\')"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2">'+getFlag(f)+'<i class="fa-solid fa-arrow-right text-xs" style="color:var(--muted);"></i>'+getFlag(t)+'</div><span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md" style="color:'+(up?'var(--green)':'var(--red)')+';background:'+(up?'rgba(52,211,153,.1)':'rgba(248,113,113,.1)')+';"><i class="fa-solid '+(up?'fa-caret-up':'fa-caret-down')+'"></i>'+Math.abs(ch).toFixed(2)+'%</span></div><div class="text-xs font-medium mb-1" style="color:var(--muted);">'+f+' / '+t+'</div><div class="text-xl font-bold" style="color:var(--fg);">'+(rate?fmt(rate):'—')+'</div></div>';
+  }).join('');
+}
+
+async function loadRecent(){
+  var data=await apiGet('/api/recent/');
+  if(!data||!data.conversions.length){
+    document.getElementById('recentBody').innerHTML='<div class="text-center py-10 text-sm" style="color:var(--muted);"><i class="fa-regular fa-clock mr-2"></i>No conversions yet. Try converting above.</div>';return;
+  }
+  document.getElementById('recentBody').innerHTML=data.conversions.map(function(c){
+    var dt=new Date(c.created_at);
+    return '<div class="flex items-center justify-between px-5 py-3.5 transition-colors" style="border-bottom:1px solid var(--border);" onmouseenter="this.style.background=\'rgba(255,255,255,.03)\'" onmouseleave="this.style.background=\'transparent\'"><div class="flex items-center gap-3">'+getFlag(c.from_currency)+'<i class="fa-solid fa-arrow-right text-xs" style="color:var(--muted);"></i>'+getFlag(c.to_currency)+'</div><div class="text-sm font-medium" style="color:var(--fg);">'+parseFloat(c.from_amount).toLocaleString()+' '+c.from_currency+' → <span style="color:var(--accent2);">'+parseFloat(c.to_amount).toLocaleString()+' '+c.to_currency+'</span></div><div class="text-xs" style="color:var(--muted);">'+dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})+' · Rate: '+parseFloat(c.rate).toFixed(4)+'</div></div>';
+  }).join('');
+}
+
+function renderMultiView(){
+  var amount=parseFloat(document.getElementById('multiAmount').value)||0;
+  var base=document.getElementById('multiBase').value;
+  var top=['USD','EUR','GBP','JPY','AUD','CAD','CHF','CNY','HKD','NZD','SEK','KRW','SGD','NOK','MXN','INR'];
+  document.getElementById('multiBody').innerHTML=top.filter(function(c){return c!==base;}).map(function(code){
+    var rate=getRate(base,code);var cv=rate?amount*rate:0;
+    return '<div class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors" style="background:rgba(255,255,255,.02);border:1px solid var(--border);" onmouseenter="this.style.borderColor=\'rgba(0,201,167,.2)\'" onmouseleave="this.style.borderColor=\'var(--border)\'">'+getFlag(code)+'<div class="flex-1 min-w-0"><div class="text-xs font-medium" style="color:var(--muted);">'+code+' — '+(currencies[code]||'')+'</div><div class="text-sm font-bold truncate" style="color:var(--fg);">'+fmtMoney(cv,code)+'</div></div><div class="text-xs" style="color:var(--muted);">'+(rate?fmt(rate):'—')+'</div></div>';
+  }).join('');
+}
+
+async function init(){
+  populateSelect(document.getElementById('fromCurrency'),'USD');
+  populateSelect(document.getElementById('toCurrency'),'EUR');
+  populateSelect(document.getElementById('baseSelect'),'EUR');
+  populateSelect(document.getElementById('chartFrom'),'USD');
+  populateSelect(document.getElementById('chartTo'),'EUR');
+  populateSelect(document.getElementById('multiBase'),'USD');
+
+  var data=await apiGet('/api/rates/?base=EUR');
+  if(!data||data.error){showToast('Failed to load rates');return;}
+  latestRates=data.rates;
+  baseCurrency=data.base;
+  document.getElementById('rateDate').textContent=data.date;
+  document.getElementById('baseLabel').textContent=data.base;
+
+  buildTicker();renderRatesTable();renderPopularPairs();renderMultiView();doConvert();loadChart();loadRecent();
+}
+
+document.getElementById('convertBtn').addEventListener('click',doConvert);
+document.getElementById('fromAmount').addEventListener('keydown',function(e){if(e.key==='Enter')doConvert();});
+document.getElementById('swapBtn').addEventListener('click',function(){var f=document.getElementById('fromCurrency'),t=document.getElementById('toCurrency'),tmp=f.value;f.value=t.value;t.value=tmp;doConvert();});
+document.getElementById('fromCurrency').addEventListener('change',doConvert);
+document.getElementById('toCurrency').addEventListener('change',doConvert);
+document.getElementById('baseSelect').addEventListener('change',async function(e){
+  var nb=e.target.value;var data=await apiGet('/api/rates/?base='+nb);
+  if(!data||data.error){showToast('Failed to change base');return;}
+  latestRates=data.rates;baseCurrency=nb;document.getElementById('baseLabel').textContent=nb;document.getElementById('rateDate').textContent=data.date;
+  renderRatesTable();renderPopularPairs();buildTicker();renderMultiView();showToast('Base changed to '+nb);
+});
+document.getElementById('searchRates').addEventListener('input',function(e){renderRatesTable(e.target.value);});
+document.getElementById('chartFrom').addEventListener('change',loadChart);
+document.getElementById('chartTo').addEventListener('change',loadChart);
+document.getElementById('multiAmount').addEventListener('input',renderMultiView);
+document.getElementById('multiBase').addEventListener('change',renderMultiView);
+document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});});});
+
+init();
+</script>
+</body>
+</html>
