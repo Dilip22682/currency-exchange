@@ -9,7 +9,7 @@ This project demonstrates practical use of Django, REST API integration, JSON da
 ## 🌐 Live Demo
 
 🚀 Live Application:  
-[https://your-render-service.onrender.com](https://your-render-service.onrender.com)
+[https://your-render-service.onrender.com](https://currency-exchange-rtd3.onrender.com/)
 
 > Replace the above URL with your actual Render URL after deployment.
 
