@@ -31,7 +31,14 @@ DEBUG = True
 #     'Diliphostedcode2026.pythonanywhere.com',
 #     'Diliphostedcode2026.eu.pythonanywhere.com'
 # ]
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+import os
+
+ALLOWED_HOSTS = [
+    ".onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
 DEBUG = False  # set to False for production
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -46,12 +53,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'conversionapp',  # Add the conversionapp to the installed apps
+    'conversionapp',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    "django.contrib.staticfiles",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
